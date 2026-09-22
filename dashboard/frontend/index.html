@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open EDA Verification</title>
+</head>
+
+<body>
+    <h1>Open EDA Verification</h1>
+
+    <h2>Run Verification</h2>
+
+    <label>
+        DUT:
+        <input id="dut" value="arbiter">
+    </label>
+    <br><br>
+
+    <label>
+        Simulator:
+        <select id="simulator">
+            <option value="icarus">Icarus</option>
+            <option value="verilator">Verilator</option>
+        </select>
+    </label>
+    <br><br>
+
+    <label>
+        Test:
+        <input id="test" value="basic">
+    </label>
+    <br><br>
+
+    <label>
+        Seed:
+        <input id="seed" type="number" value="1">
+    </label>
+    <br><br>
+
+    <button onclick="runVerification()">
+        Run Verification
+    </button>
+
+    <h2>Result</h2>
+
+    <pre id="result">No run yet.</pre>
+
+    <button id="logButton" onclick="viewLog()" disabled>
+        View Simulation Log
+    </button>
+
+    <h2>Simulation Log</h2>
+
+    <pre id="log">No log loaded.</pre>
+
+    <script>
+        let latestRunId = null;
+
+        async function runVerification() {
+            const resultElement = document.getElementById("result");
+            const logButton = document.getElementById("logButton");
+
+            resultElement.textContent = "Running verification...";
+            logButton.disabled = true;
+            latestRunId = null;
+
+            const request = {
+                dut: document.getElementById("dut").value,
+                simulator: document.getElementById("simulator").value,
+                test: document.getElementById("test").value,
+                seed: Number(document.getElementById("seed").value)
+            };
+
+            try {
+                const response = await fetch("/api/run", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(request)
+                });
+
+                const result = await response.json();
+
+                resultElement.textContent =
+                    JSON.stringify(result, null, 2);
+
+                if (result.run_id) {
+                    latestRunId = result.run_id;
+                    logButton.disabled = false;
+                }
+
+            } catch (error) {
+                resultElement.textContent =
+                    "Request failed: " + error;
+            }
+        }
+
+        async function viewLog() {
+            const logElement = document.getElementById("log");
+
+            if (!latestRunId) {
+                logElement.textContent = "No run available.";
+                return;
+            }
+
+            logElement.textContent = "Loading simulation log...";
+
+            try {
+                const response = await fetch(
+                    `/api/runs/${latestRunId}/log`
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        `HTTP ${response.status}`
+                    );
+                }
+
+                const log = await response.text();
+                logElement.textContent = log;
+
+            } catch (error) {
+                logElement.textContent =
+                    "Failed to load log: " + error;
+            }
+        }
+    </script>
+</body>
+</html>

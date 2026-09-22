@@ -6,5 +6,8 @@ def create_run_directory(base_dir: str = "artifacts"):
     run_id = datetime.now().strftime("run_%Y%m%d_%H%M%S_%f")
     run_dir = Path(base_dir) / run_id
     run_dir.mkdir(parents=True, exist_ok=False)
-
     return run_id, run_dir
+
+
+def create_regression_id():
+    return datetime.now().strftime("reg_%Y%m%d_%H%M%S_%f")

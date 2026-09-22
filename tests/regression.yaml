@@ -1,0 +1,12 @@
+tests:
+  - name: basic_seed_1
+    test: basic
+    seed: 1
+
+  - name: basic_seed_2
+    test: basic
+    seed: 2
+
+  - name: basic_seed_3
+    test: basic
+    seed: 3
