@@ -6,3 +6,18 @@ results.xml
 *.vcd
 *.fst
 *.log
+
+# Verification run artifacts
+artifacts/
+reports/
+
+# Verilator build outputs
+Vtop__ALL.cpp
+verilated.d
+verilated.o
+verilated_dpi.d
+verilated_dpi.o
+verilated_threads.d
+verilated_threads.o
+verilated_vpi.d
+verilated_vpi.o
