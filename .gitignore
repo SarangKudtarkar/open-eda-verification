@@ -21,3 +21,6 @@ verilated_threads.d
 verilated_threads.o
 verilated_vpi.d
 verilated_vpi.o
+
+# C++ reference model build output
+models/reference_model
