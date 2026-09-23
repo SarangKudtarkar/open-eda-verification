@@ -1,0 +1,49 @@
+name: EDA Verification
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install EDA tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y iverilog tcl perl
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run verification
+        run: |
+          python run.py --simulator icarus --seed 1
+
+      - name: Run regression
+        run: |
+          python run.py --regression --simulator icarus
+
+      - name: Run Tcl flow
+        run: |
+          tclsh scripts/run.tcl
+
+      - name: Analyze latest log with Perl
+        run: |
+          LOG=$(find artifacts -name simulation.log -type f | sort | tail -1)
+          perl scripts/analyze_logs.pl "$LOG"
