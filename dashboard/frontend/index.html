@@ -3,65 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Open EDA Verification</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        input,
+        select {
+            margin-left: 10px;
+            padding: 6px;
+        }
+
+        button {
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+
+        #status {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .pass {
+            color: green;
+        }
+
+        .fail {
+            color: red;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+        }
+
+        .result-label {
+            font-weight: bold;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        #logButton {
+            margin-top: 15px;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Open EDA Verification</h1>
 
-    <h2>Run Verification</h2>
+    <h1>Open EDA Verification Control Center</h1>
 
-    <label>
-        DUT:
-        <input id="dut" value="arbiter">
-    </label>
-    <br><br>
+    <div class="panel">
+        <h2>Run Verification</h2>
 
-    <label>
-        Simulator:
-        <select id="simulator">
-            <option value="icarus">Icarus</option>
-            <option value="verilator">Verilator</option>
-        </select>
-    </label>
-    <br><br>
+        <label>
+            DUT:
+            <input id="dut" value="arbiter">
+        </label>
 
-    <label>
-        Test:
-        <input id="test" value="basic">
-    </label>
-    <br><br>
+        <label>
+            Simulator:
+            <select id="simulator">
+                <option value="icarus">Icarus</option>
+                <option value="verilator">Verilator</option>
+            </select>
+        </label>
 
-    <label>
-        Seed:
-        <input id="seed" type="number" value="1">
-    </label>
-    <br><br>
+        <label>
+            Test:
+            <input id="test" value="basic">
+        </label>
 
-    <button onclick="runVerification()">
-        Run Verification
-    </button>
+        <label>
+            Seed:
+            <input id="seed" type="number" value="1">
+        </label>
 
-    <h2>Result</h2>
+        <button onclick="runVerification()">
+            Run Verification
+        </button>
+    </div>
 
-    <pre id="result">No run yet.</pre>
+    <div class="panel">
+        <h2>Verification Result</h2>
 
-    <button id="logButton" onclick="viewLog()" disabled>
-        View Simulation Log
-    </button>
+        <div id="status">No run yet.</div>
 
-    <h2>Simulation Log</h2>
+        <div class="result-grid">
+            <div class="result-label">Failure Reason</div>
+            <div id="failureReason">-</div>
 
-    <pre id="log">No log loaded.</pre>
+            <div class="result-label">Runtime</div>
+            <div id="runtime">-</div>
+
+            <div class="result-label">Run ID</div>
+            <div id="runId">-</div>
+        </div>
+
+        <button id="logButton" onclick="viewLog()" disabled>
+            View Simulation Log
+        </button>
+    </div>
+
+    <div class="panel">
+        <h2>Simulation Log</h2>
+
+        <pre id="log">No log loaded.</pre>
+    </div>
 
     <script>
         let latestRunId = null;
 
+        function setStatus(status) {
+            const statusElement = document.getElementById("status");
+
+            statusElement.textContent = status;
+            statusElement.className =
+                status === "PASS" ? "pass" : "fail";
+        }
+
         async function runVerification() {
-            const resultElement = document.getElementById("result");
+            const statusElement = document.getElementById("status");
             const logButton = document.getElementById("logButton");
 
-            resultElement.textContent = "Running verification...";
+            statusElement.textContent = "RUNNING...";
+            statusElement.className = "";
+
+            document.getElementById("failureReason").textContent = "-";
+            document.getElementById("runtime").textContent = "-";
+            document.getElementById("runId").textContent = "-";
+            document.getElementById("log").textContent =
+                "No log loaded.";
+
             logButton.disabled = true;
             latestRunId = null;
 
@@ -83,8 +185,16 @@
 
                 const result = await response.json();
 
-                resultElement.textContent =
-                    JSON.stringify(result, null, 2);
+                setStatus(result.status);
+
+                document.getElementById("failureReason").textContent =
+                    result.failure_reason || "-";
+
+                document.getElementById("runtime").textContent =
+                    `${result.runtime_seconds.toFixed(3)} seconds`;
+
+                document.getElementById("runId").textContent =
+                    result.run_id || "-";
 
                 if (result.run_id) {
                     latestRunId = result.run_id;
@@ -92,8 +202,10 @@
                 }
 
             } catch (error) {
-                resultElement.textContent =
-                    "Request failed: " + error;
+                setStatus("ERROR");
+
+                document.getElementById("failureReason").textContent =
+                    error.toString();
             }
         }
 
@@ -105,7 +217,8 @@
                 return;
             }
 
-            logElement.textContent = "Loading simulation log...";
+            logElement.textContent =
+                "Loading simulation log...";
 
             try {
                 const response = await fetch(
@@ -119,6 +232,7 @@
                 }
 
                 const log = await response.text();
+
                 logElement.textContent = log;
 
             } catch (error) {
@@ -127,5 +241,6 @@
             }
         }
     </script>
+
 </body>
 </html>
